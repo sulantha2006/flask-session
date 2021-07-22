@@ -601,7 +601,8 @@ class GoogleFireStoreSessionInterface(SessionInterface):
     def __init__(self, client, collection, key_prefix, use_signer=False,
                  permanent=True):
         if client is None:
-            client = firestore.Client()
+            raise Exception("Please set Firestore Client")
+            #client = firestore.Client()
         self.client = client
         self.store = client.collection(collection)
         self.key_prefix = key_prefix
