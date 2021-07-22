@@ -30,8 +30,7 @@ setup(
     platforms='any',
     install_requires=[
         'Flask>=0.8',
-        'cachelib',
-        'google-cloud-firestore'
+        'cachelib'
     ],
     test_suite='test_session',
     classifiers=[
