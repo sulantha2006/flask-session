@@ -591,6 +591,21 @@ class SqlAlchemySessionInterface(SessionInterface):
                             domain=domain, path=path, secure=secure,
                             **conditional_cookie_kwargs)
 
+@firestore.transactional
+def fs_get_doc(transaction, doc_ref):
+    doc = doc_ref.get(transaction=transaction)
+    if doc.exists:
+        return doc.to_dict()
+    else:
+        return None
+
+@firestore.transactional
+def fs_set_doc(transaction, doc_ref, doc_data):
+    transaction.set(doc_ref, doc_data)
+
+
+def fs_delete_doc(doc_ref):
+    doc_ref.delete()
 
 class GoogleFireStoreSessionInterface(SessionInterface):
     """A Session interface that uses GCP firestore as backend"""
@@ -609,21 +624,6 @@ class GoogleFireStoreSessionInterface(SessionInterface):
         self.use_signer = use_signer
         self.permanent = permanent
         self.has_same_site_capability = hasattr(self, "get_cookie_samesite")
-
-    @firestore.transactional
-    def get_doc(self, transaction, doc_ref):
-        doc = doc_ref.get(transaction=transaction)
-        if doc.exists:
-            return doc.to_dict()
-        else:
-            return None
-
-    @firestore.transactional
-    def set_doc(self, transaction, doc_ref, doc_data):
-        transaction.set(doc_ref, doc_data)
-
-    def delete_doc(self, doc_ref):
-        doc_ref.delete()
 
     def open_session(self, app, request):
         sid = request.cookies.get(app.session_cookie_name)
@@ -644,11 +644,11 @@ class GoogleFireStoreSessionInterface(SessionInterface):
         store_id = self.key_prefix + sid
         document_ref = self.store.document(document_id=store_id)
         transaction = self.client.transaction()
-        document = self.get_doc(transaction, document_ref)
+        document = fs_get_doc(transaction, document_ref)
 
         if document and document['expiration'] <= datetime.utcnow():
             # Delete expired session
-            self.delete_doc(document_ref)
+            fs_delete_doc(document_ref)
             document = None
         if document is not None:
             try:
@@ -667,7 +667,7 @@ class GoogleFireStoreSessionInterface(SessionInterface):
         if not session:
             if session.modified:
                 document_ref = self.store.document(document_id=store_id)
-                self.delete_doc(document_ref)
+                fs_delete_doc(document_ref)
                 response.delete_cookie(app.session_cookie_name,
                                        domain=domain, path=path)
             return
@@ -688,7 +688,7 @@ class GoogleFireStoreSessionInterface(SessionInterface):
             'val': val,
             'expiration': expires
         }
-        self.set_doc(transaction, document_ref, s_data)
+        fs_set_doc(transaction, document_ref, s_data)
 
         if self.use_signer:
             session_id = self._get_signer(app).sign(want_bytes(session.sid))
