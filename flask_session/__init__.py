@@ -15,7 +15,7 @@ import os
 
 from .sessions import NullSessionInterface, RedisSessionInterface, \
     MemcachedSessionInterface, FileSystemSessionInterface, \
-    MongoDBSessionInterface, SqlAlchemySessionInterface
+    MongoDBSessionInterface, SqlAlchemySessionInterface, GoogleFireStoreSessionInterface
 
 
 class Session(object):
@@ -77,6 +77,8 @@ class Session(object):
         config.setdefault('SESSION_MONGODB_COLLECT', 'sessions')
         config.setdefault('SESSION_SQLALCHEMY', None)
         config.setdefault('SESSION_SQLALCHEMY_TABLE', 'sessions')
+        config.setdefault('SESSION_FIRESTORE', None)
+        config.setdefault('SESSION_FIRESTORE_COLLECT', "flask_session")
 
         if config['SESSION_TYPE'] == 'redis':
             session_interface = RedisSessionInterface(
@@ -103,6 +105,10 @@ class Session(object):
                 config['SESSION_SQLALCHEMY_TABLE'],
                 config['SESSION_KEY_PREFIX'], config['SESSION_USE_SIGNER'],
                 config['SESSION_PERMANENT'])
+        elif config['SESSION_TYPE'] == 'firestore':
+            session_interface = GoogleFireStoreSessionInterface(
+                config['SESSION_FIRESTORE'], config['SESSION_FIRESTORE_COLLECT'], config['SESSION_KEY_PREFIX'],
+                config['SESSION_USE_SIGNER'], config['SESSION_PERMANENT'])
         else:
             session_interface = NullSessionInterface()
 
