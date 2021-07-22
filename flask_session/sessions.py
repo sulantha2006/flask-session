@@ -11,6 +11,7 @@
 import sys
 import time
 from datetime import datetime
+from datetime import timezone
 from uuid import uuid4
 try:
     import cPickle as pickle
@@ -646,7 +647,7 @@ class GoogleFireStoreSessionInterface(SessionInterface):
         transaction = self.client.transaction()
         document = fs_get_doc(transaction, document_ref)
 
-        if document and document['expiration'] <= datetime.utcnow():
+        if document and document['expiration'] <= datetime.now(timezone.utc).astimezone():
             # Delete expired session
             fs_delete_doc(document_ref)
             document = None
